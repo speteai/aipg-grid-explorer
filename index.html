@@ -146,9 +146,9 @@
       <code>qwen3:*</code> and <code>gpt-oss-120b</code> spend the token budget on hidden reasoning; at small
       <code>max_tokens</code> you get <code>finish_reason:"length"</code> and empty content. Give generous headroom
       (≥ ~1024 even for trivial prompts).</div></div>
-    <div class="flag"><span class="ic">◆</span><div><b>No balance endpoint.</b> There is no way to read remaining credit
-      via the API — you only learn you're out when a call returns <code>402</code>. <code>/v1/account</code> exists but
-      carries no balance.</div></div>
+    <div class="flag"><span class="ic">◆</span><div><b>Balance lives at <code>/v1/account/credits</code>.</b>
+      Read <code>total_spendable_usd</code> there before you call, instead of discovering a <code>402</code> mid-request.
+      The full endpoint list is public at <code>/openapi.json</code> (Swagger UI at <code>/docs</code>).</div></div>
     <div class="flag"><span class="ic">◆</span><div><b>Legacy <code>/api/v2</code> (AI-Horde style) is retired</b> —
       returns <code>410 Gone</code>, pointing at <code>/v1</code>.</div></div>
     <div class="flag"><span class="ic">◆</span><div><b>Not available (all 404):</b> <code>/v1/embeddings</code>,
