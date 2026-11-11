@@ -1,32 +1,36 @@
 # AIPG Grid Explorer
 
-A tiny, single-file web page that gives developers a live view of the
-[AI Power Grid](https://api.aipowergrid.io/v1) OpenAI-compatible API:
+A small static web page that gives a live view of the
+[AI Power Grid](https://aipowergrid.io), read in your browser from the public API.
+It looks and reads like [AIPG Desktop](https://github.com/speteai/aipg-desktop), the
+desktop app by the same author.
 
-- **Text & vision models** — pulled live from the public `GET /v1/models`
-  endpoint, with input modalities and USD prices per million tokens.
-- **Image generation** — the `/v1/images/generations` surface and its models,
-  which are *not* listed by `/v1/models` (optionally refreshed live with a key).
-- **Developer gotchas** — the non-obvious things that cost integration time
-  (the `Python-urllib` 403, reasoning `content: null`, no balance endpoint,
-  the retired `/api/v2`, missing endpoints).
-- **Copy-paste quickstarts** — curl, Python, JS and image examples.
+- **Overview** — network status, workers and models online, jobs today, validators, and
+  the work done on the grid by type.
+- **Models** — text and vision models with the number of workers serving each one, the
+  measured speed and the list price; image, video and audio models with their prices.
+- **Network** — which worker serves which model, with recent activity, and the latest
+  jobs on the grid. Refreshes every 15 seconds.
+- **Account** (needs an API key) — your credit and free allowance, your workers and
+  their recent jobs.
+- **Developers** — the non-obvious things that cost integration time, copy-paste
+  quickstarts and the image API parameters.
 
 > **Unofficial & community-built.** Not affiliated with AI Power Grid.
 > Data is fetched live in your browser from `api.aipowergrid.io`.
 
 ## Use it
 
-Open `index.html` in any browser, or visit the GitHub Pages deployment.
-No build step, no dependencies, no server — one static HTML file.
+Visit the GitHub Pages deployment, or open `index.html` in any browser (keep
+`aipg-logo.png` next to it). No build step, no dependencies, no server.
 
-### Optional key probe
+### API key
 
-Browsing needs **no API key** (`/v1/models` is public and CORS-enabled).
-If you paste a `grid_…` key into the *Live key probe* box, it is used only to
-refresh the image-model list and show your linked account. **The key stays in
-your browser's `localStorage`** and is sent only to `api.aipowergrid.io` — it is
-never uploaded or committed anywhere.
+Everything except *Account* works without a key. If you save a `grid_…` key under
+*Account*, it is used only to read your credit, your workers and their jobs. **The key
+stays in your browser's `localStorage`** and is sent only to `api.aipowergrid.io` — it is
+never uploaded or committed anywhere. The page cannot run a worker, chat or generate
+images; AIPG Desktop does that.
 
 ## Why
 

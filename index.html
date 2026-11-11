@@ -4,190 +4,355 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AIPG Grid Explorer</title>
-<meta name="description" content="Live model &amp; price explorer for the AI Power Grid OpenAI-compatible API. Community-built, unofficial.">
+<meta name="description" content="Live view of the AI Power Grid: network, workers, models, prices and your account. Community-built, unofficial.">
+<link rel="icon" href="aipg-logo.png">
 <style>
-  :root{
-    --bg:#0f1115; --panel:#171a21; --panel2:#1d222b; --bd:#2a303c;
-    --fg:#e8ebf0; --mut:#9aa4b2; --acc:#4ade80; --acc2:#38bdf8;
-    --warn:#fbbf24; --danger:#f87171; --chip:#232a35; --code:#11141a;
-    --radius:12px;
-  }
-  :root:not([data-theme="dark"]){
-    @media (prefers-color-scheme: light){
-      --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --bd:#dde1e8;
-      --fg:#161a20; --mut:#5a6472; --acc:#15803d; --acc2:#0369a1;
-      --warn:#92700a; --danger:#b91c1c; --chip:#eef1f5; --code:#f0f2f5;
-    }
-  }
-  :root[data-theme="light"]{
-    --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --bd:#dde1e8;
-    --fg:#161a20; --mut:#5a6472; --acc:#15803d; --acc2:#0369a1;
-    --warn:#92700a; --danger:#b91c1c; --chip:#eef1f5; --code:#f0f2f5;
-  }
-  *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--bg);color:var(--fg);
-    font:15px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  a{color:var(--acc2);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .wrap{max-width:1040px;margin:0 auto;padding:24px 16px 72px}
-  header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
-  h1{font-size:1.5rem;margin:0;letter-spacing:-.01em}
-  .badge{font-size:.72rem;color:var(--mut);border:1px solid var(--bd);border-radius:999px;padding:2px 9px}
-  .sub{color:var(--mut);margin:4px 0 22px}
-  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-left:auto}
-  button,.btn{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--bd);
-    border-radius:8px;padding:7px 12px;cursor:pointer}
-  button:hover{border-color:var(--acc2)}
-  section{background:var(--panel);border:1px solid var(--bd);border-radius:var(--radius);
-    padding:18px 18px 6px;margin:16px 0}
-  h2{font-size:1.1rem;margin:2px 0 4px;display:flex;align-items:center;gap:8px}
-  h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--acc)}
-  .note{color:var(--mut);font-size:.9rem;margin:0 0 14px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:12px}
-  .card{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:13px 14px}
-  .card h3{margin:0 0 8px;font-size:.98rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    word-break:break-all}
-  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
-  .chip{font-size:.72rem;background:var(--chip);border:1px solid var(--bd);border-radius:999px;padding:2px 8px;color:var(--mut)}
-  .chip.img{color:var(--acc2);border-color:var(--acc2)}
-  .chip.txt{color:var(--acc);border-color:var(--acc)}
-  .price{font-size:.86rem;color:var(--fg)}
-  .price .k{color:var(--mut)}
-  .price .v{font-family:ui-monospace,Menlo,monospace}
-  .muted{color:var(--mut)}
-  table{width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:12px}
-  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
-  th{color:var(--mut);font-weight:600}
-  code{font-family:ui-monospace,Menlo,monospace;background:var(--code);border:1px solid var(--bd);
-    border-radius:5px;padding:1px 5px;font-size:.86em}
-  pre{background:var(--code);border:1px solid var(--bd);border-radius:10px;padding:13px 14px;overflow:auto;
-    font-size:.84rem;line-height:1.5;position:relative}
-  pre code{background:none;border:none;padding:0}
-  .copy{position:absolute;top:8px;right:8px;font-size:.72rem;padding:3px 8px}
-  .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
-  .tabs button[aria-selected=true]{border-color:var(--acc2);color:var(--acc2)}
-  .flag{display:flex;gap:10px;padding:11px 12px;border:1px solid var(--bd);border-radius:9px;
-    background:var(--panel2);margin-bottom:10px;align-items:flex-start}
-  .flag .ic{font-size:1.1rem;line-height:1.3}
-  .flag.warn{border-color:var(--warn)} .flag.warn .ic{color:var(--warn)}
-  .flag.danger{border-color:var(--danger)} .flag.danger .ic{color:var(--danger)}
-  .flag b{font-weight:600}
-  .keyrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-  .keyrow input{font:inherit;background:var(--code);color:var(--fg);border:1px solid var(--bd);
-    border-radius:8px;padding:7px 10px;min-width:260px;flex:1}
-  .status{font-size:.86rem;color:var(--mut)}
-  .status.err{color:var(--danger)} .status.ok{color:var(--acc)}
-  footer{color:var(--mut);font-size:.84rem;margin-top:26px;text-align:center;line-height:1.7}
-  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--bd);border-top-color:var(--acc2);
-    border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .iss{display:flex;gap:8px;flex-wrap:wrap}
-  .iss a{font-size:.82rem;background:var(--panel2);border:1px solid var(--bd);border-radius:999px;padding:3px 10px}
+/* Same visual language as AIPG Desktop: warm graphite / warm paper, one accent
+   (the orange of the AIPG cube), hairline rules instead of boxes, monospace for
+   anything that is a measurement, id or price. */
+:root{
+  color-scheme:dark;
+  --bg:#141311; --panel:#1b1a17; --panel2:#24221e; --code:#0f0e0d;
+  --bd:#2e2b26; --bd-strong:#4b463e;
+  --fg:#ece9e2; --mut:#9c968b; --faint:#6f6a60;
+  --acc:#ff9900; --acc-fill:#ff9900; --acc-ink:#1a1000;
+  --ok:#8fb481; --warn:#e3a94a; --danger:#e5705e;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+  --t-micro:10.5px; --t-small:12px; --t-ui:13px; --t-body:14px; --t-title:22px; --t-figure:26px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  --r:4px; --r-tag:2px; --ease:120ms ease-out;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f6f4ef; --panel:#fdfcfa; --panel2:#ebe8e0; --code:#efece5;
+  --bd:#dcd8ce; --bd-strong:#b8b3a7;
+  --fg:#1c1a17; --mut:#69645b; --faint:#958f84;
+  --acc:#a35400; --acc-fill:#ff9900; --acc-ink:#1c1200;
+  --ok:#3f6b35; --warn:#8a5a00; --danger:#b3352a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;display:flex;overflow:hidden;background:var(--bg);color:var(--fg);
+  font:var(--t-body)/1.55 var(--sans);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+::selection{background:var(--acc-fill);color:var(--acc-ink)}
+*{scrollbar-width:thin;scrollbar-color:var(--bd-strong) transparent}
+a{color:var(--fg);text-decoration:underline;text-decoration-color:var(--acc);text-decoration-thickness:1px;
+  text-underline-offset:3px;transition:color var(--ease)}
+a:hover{color:var(--acc)}
+b,strong{font-weight:600}
+p{margin:0 0 var(--s3)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);border:1px solid var(--bd);
+  border-radius:var(--r-tag);padding:0 4px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.muted{color:var(--mut)}
+.spacer{flex:1}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2)}
+
+/* sidebar: a numbered index */
+.side{width:184px;flex:0 0 184px;display:flex;flex-direction:column;gap:1px;padding:var(--s4) 0 var(--s2);
+  background:var(--panel);border-right:1px solid var(--bd);counter-reset:nav}
+.brand{display:flex;align-items:center;gap:10px;padding:2px var(--s4) var(--s5);
+  font-size:var(--t-body);font-weight:650;letter-spacing:.04em;color:var(--fg);text-decoration:none}
+.brand:hover{color:var(--fg)}
+.brand img{width:22px;height:22px;display:block}
+.brand small{font-family:var(--mono);font-size:var(--t-micro);font-weight:400;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--mut);margin-left:2px}
+.nav{counter-increment:nav;display:flex;align-items:baseline;gap:10px;text-align:left;background:none;border:0;
+  border-left:2px solid transparent;color:var(--mut);font:inherit;font-size:var(--t-ui);
+  padding:7px var(--s4) 7px 14px;cursor:pointer;text-decoration:none;
+  transition:color var(--ease),background-color var(--ease)}
+.nav::before{content:counter(nav,decimal-leading-zero);font:var(--t-micro)/1 var(--mono);letter-spacing:.04em;
+  color:var(--faint)}
+.nav:hover{color:var(--fg);background:var(--panel2)}
+.nav.active{color:var(--fg);font-weight:600;border-left-color:var(--acc-fill)}
+.nav.active::before{color:var(--acc)}
+.nav:focus-visible{outline-offset:-2px}
+.conn{display:flex;align-items:center;gap:var(--s2);margin:0 var(--s4);padding:var(--s3) 0 var(--s2);
+  border-top:1px solid var(--bd);font:var(--t-micro)/1.3 var(--mono);letter-spacing:.06em;
+  text-transform:uppercase;color:var(--mut)}
+.conn .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;border:1px solid var(--faint)}
+.conn.ok .dot{background:var(--ok);border-color:var(--ok)}
+.conn.err .dot{background:var(--danger);border-color:var(--danger)}
+.conn.err{color:var(--danger)}
+
+main{flex:1;min-width:0;min-height:0;overflow:auto;padding:var(--s5) var(--s6) var(--s6)}
+.view{display:none;max-width:1080px}
+.view.active{display:block}
+.vh{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s3);min-height:30px}
+.vh > h1 + *{margin-left:auto}
+h1{margin:0;font-size:var(--t-title);line-height:1.2;font-weight:600;letter-spacing:-.015em}
+h2.sec{margin:var(--s6) 0 var(--s3);font-size:var(--t-ui);line-height:1.3;font-weight:600}
+.view > p.muted{max-width:68ch}
+.stamp{margin:var(--s5) 0 0;color:var(--faint);font:var(--t-micro)/1.4 var(--mono);letter-spacing:.06em;
+  text-transform:uppercase}
+.hint{color:var(--mut);font-size:var(--t-small);line-height:1.5;margin:var(--s2) 0 0;max-width:72ch}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:500 var(--t-ui)/1.2 var(--sans);
+  color:var(--fg);background:var(--panel);border:1px solid var(--bd-strong);border-radius:var(--r);
+  padding:6px 12px;min-height:30px;cursor:pointer;white-space:nowrap;text-decoration:none;
+  transition:background-color var(--ease),border-color var(--ease),color var(--ease)}
+.btn:hover{background:var(--panel2);border-color:var(--fg);color:var(--fg)}
+.btn.ghost{background:none;border-color:transparent;color:var(--mut)}
+.btn.ghost:hover{background:var(--panel2);color:var(--fg)}
+.btn.primary{background:var(--acc-fill);border-color:var(--acc-fill);color:var(--acc-ink);font-weight:600}
+.btn.primary:hover{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+input[type=password],input[type=text]{font:var(--t-ui)/1.4 var(--mono);color:var(--fg);background:var(--code);
+  border:1px solid var(--bd);border-radius:var(--r);padding:7px 10px;min-width:0}
+input:focus{outline:none;border-color:var(--acc)}
+::placeholder{color:var(--faint);opacity:1}
+
+/* stats: a ruled strip of figures */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));column-gap:var(--s5);
+  margin:var(--s4) 0 var(--s2);border-top:1px solid var(--bd-strong)}
+.stats:empty{display:none}
+.stat{padding:var(--s3) 0 var(--s4)}
+.stat .k{color:var(--mut);font:var(--t-micro)/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.stat .v{margin-top:var(--s2);font:500 var(--t-figure)/1.1 var(--mono);letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums}
+.stat .v.lead{color:var(--acc)}
+.stat .v small{font-size:13px;color:var(--mut);letter-spacing:0}
+.stat .n{margin-top:var(--s1);color:var(--mut);font:var(--t-micro)/1.5 var(--mono)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--s2)}
+.chip{display:inline-flex;align-items:center;gap:5px;font:var(--t-micro)/1 var(--mono);letter-spacing:.07em;
+  text-transform:uppercase;color:var(--mut);border:1px solid var(--bd);border-radius:var(--r-tag);
+  padding:4px 6px;white-space:nowrap}
+.chip.on,.chip.off{border-color:currentColor}
+.chip.on::before,.chip.off::before{content:"";width:5px;height:5px;background:currentColor;flex:0 0 auto}
+.chip.on{color:var(--ok)}
+.chip.off{color:var(--danger)}
+.chip.off::before{background:none;box-shadow:inset 0 0 0 1px currentColor}
+.chip.txt{color:var(--fg);border-color:var(--bd-strong)}
+.chip.img{color:var(--acc);border-color:var(--bd-strong)}
+
+/* cards are ledger entries: a rule above, content below, no box */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));column-gap:var(--s5)}
+.cards > p{grid-column:1/-1;margin:0}
+.card{border-top:1px solid var(--bd);padding:var(--s3) 0 var(--s5);min-width:0}
+.card h3{margin:0 0 var(--s2);font:600 var(--t-ui)/1.35 var(--mono);word-break:break-all}
+.price{font:var(--t-small)/1.5 var(--mono);color:var(--mut)}
+.price .v{color:var(--fg);font-variant-numeric:tabular-nums}
+.wmeta{margin-top:var(--s2);color:var(--mut);font:var(--t-small)/1.7 var(--mono);word-break:break-word}
+
+.tablewrap{overflow:auto;border-top:1px solid var(--bd-strong)}
+table{width:100%;border-collapse:collapse;font:var(--t-small)/1.4 var(--mono);font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:var(--s2) var(--s4) var(--s2) 0;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:400;font-size:var(--t-micro);letter-spacing:.08em;text-transform:uppercase;
+  padding-top:10px;padding-bottom:10px}
+tbody tr:hover{background:var(--panel)}
+tbody tr:last-child td{border-bottom:none}
+td.wrap{white-space:normal;font-family:var(--sans);font-size:var(--t-ui)}
+
+.field{border-top:1px solid var(--bd);padding:var(--s4) 0;max-width:680px}
+.vh + .field,p + .field{border-top-color:var(--bd-strong)}
+.field > label{display:block;font-size:var(--t-ui);font-weight:600;margin-bottom:var(--s2)}
+.field input{flex:1 1 240px;min-width:min(240px,100%)}
+
+.banner{background:var(--panel);border-left:3px solid var(--warn);padding:var(--s3) var(--s4);margin:var(--s3) 0;
+  max-width:680px}
+.banner.app{border-left-color:var(--acc-fill)}
+
+/* network map */
+.netmap{margin:var(--s4) 0 var(--s2);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);overflow-x:auto}
+.netmap svg{display:block;width:100%;min-width:680px;height:auto}
+.netmap .nh{fill:var(--mut);font:var(--t-micro) var(--mono);letter-spacing:.08em}
+.netmap .nt{fill:var(--fg);font:12.5px var(--mono)}
+.netmap .ns{fill:var(--mut);font:10.5px var(--mono)}
+.netmap .nl{fill:none;stroke:var(--bd-strong);stroke-width:1}
+.netmap .nl.used{stroke:var(--mut)}
+.netmap .nl.hot{stroke:var(--acc-fill);stroke-width:1.6}
+.netmap .nl.fresh{stroke:var(--acc-fill);stroke-width:2.4;animation:pulse 1s ease-in-out 6}
+.netmap .nw rect{fill:var(--ok)}
+.netmap .nw.off rect{fill:none;stroke:var(--danger)}
+.netmap .nw.hot rect{fill:var(--acc-fill);animation:pulse 1.2s ease-in-out infinite}
+.netmap .nw.mine .nt{font-weight:700}
+.netmap .nm rect{fill:var(--fg)}
+.netmap .nm.other rect{fill:none;stroke:var(--fg);stroke-width:1.5}
+.netlegend .lgi{white-space:nowrap;margin-right:var(--s4)}
+.netlegend .lg{display:inline-block;width:18px;height:0;border-top:1px solid var(--bd-strong);vertical-align:middle;margin-right:6px}
+.netlegend .lg.used{border-top-color:var(--mut)}
+.netlegend .lg.hot{border-top:2px solid var(--acc-fill)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* developers */
+.flag{border-top:1px solid var(--bd);padding:var(--s3) 0;max-width:76ch}
+.flag b:first-child{display:block;margin-bottom:2px}
+.flag.danger b:first-child{color:var(--danger)}
+.flag.warn b:first-child{color:var(--warn)}
+.tabs{display:flex;gap:var(--s1);margin-bottom:var(--s2);flex-wrap:wrap}
+.tabs .btn[aria-selected=true]{border-color:var(--acc);color:var(--acc)}
+pre{position:relative;margin:0 0 var(--s3);background:var(--code);border:1px solid var(--bd);border-radius:var(--r);
+  padding:var(--s3) var(--s4);overflow:auto;font:var(--t-small)/1.55 var(--mono);max-width:860px}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+.copy{position:absolute;top:6px;right:6px;min-height:0;padding:3px 8px;font-size:var(--t-micro)}
+.iss{display:flex;gap:var(--s2);flex-wrap:wrap}
+
+/* narrow windows: the sidebar becomes a top bar */
+@media (max-width:720px){
+  body{flex-direction:column}
+  .side{width:auto;flex:none;flex-direction:row;align-items:stretch;gap:0;padding:0 var(--s3);
+    border-right:0;border-bottom:1px solid var(--bd);overflow-x:auto}
+  .side .spacer,.brand > span{display:none}
+  .brand{padding:var(--s2) var(--s3) var(--s2) 0}
+  .nav{flex:0 0 auto;gap:6px;white-space:nowrap;padding:10px;border-left:0;border-bottom:2px solid transparent}
+  .nav.active{border-bottom-color:var(--acc-fill)}
+  .conn{flex:0 0 auto;margin:0 0 0 var(--s3);padding:0;border-top:0;white-space:nowrap}
+  main{padding:var(--s4)}
+  h1{font-size:19px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat .v{font-size:21px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <h1>AIPG Grid Explorer</h1>
-    <span class="badge">unofficial · community-built</span>
-    <div class="toolbar">
-      <button id="theme" title="Toggle theme">◐ Theme</button>
-      <button id="reload">↻ Reload</button>
+<nav class="side" aria-label="Sections">
+  <a class="brand" href="#overview"><img src="aipg-logo.png" alt=""><span>AIPG <small>Explorer</small></span></a>
+  <a class="nav" href="#overview" data-view="overview">Overview</a>
+  <a class="nav" href="#models" data-view="models">Models</a>
+  <a class="nav" href="#network" data-view="network">Network</a>
+  <a class="nav" href="#account" data-view="account">Account</a>
+  <a class="nav" href="#developers" data-view="developers">Developers</a>
+  <span class="spacer"></span>
+  <div class="conn" id="conn"><span class="dot"></span><span id="connlabel">loading…</span></div>
+</nav>
+
+<main>
+  <!-- OVERVIEW -->
+  <section class="view" id="view-overview">
+    <header class="vh"><h1>Overview</h1><button class="btn" data-reload>Refresh</button></header>
+    <p class="muted">A live view of <a href="https://aipowergrid.io" target="_blank" rel="noopener">AI Power Grid</a>,
+      read in your browser from the public API. Unofficial and community-built.</p>
+    <div class="stats" id="ov-net"></div>
+    <h2 class="sec">Work done on the grid</h2>
+    <div class="tablewrap"><table><thead><tr><th>Type</th><th>Jobs today</th><th>Jobs this month</th><th>Jobs in total</th><th>Den in total</th></tr></thead>
+      <tbody id="ov-totals"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
+    <h2 class="sec">Your account</h2>
+    <div id="ov-nokey" class="banner">Add an API key under <a href="#account">Account</a> to see your credit, your workers
+      and what they earned. The key stays in this browser.</div>
+    <div class="stats" id="ov-acct"></div>
+    <div class="banner app">Want chat, images, a one-click worker and a connector for Claude Desktop?
+      <a href="https://github.com/speteai/aipg-desktop/releases/latest" target="_blank" rel="noopener">Get AIPG Desktop</a>
+      (Windows, macOS, Linux; unofficial, same author).</div>
+    <p class="stamp" id="stamp"></p>
+  </section>
+
+  <!-- MODELS -->
+  <section class="view" id="view-models">
+    <header class="vh"><h1>Models</h1><button class="btn" data-reload>Refresh</button></header>
+    <p class="muted">What the grid offers right now, with the number of workers serving each model, the measured
+      speed and the list price.</p>
+    <h2 class="sec">Text &amp; vision <span id="tcount" class="muted"></span></h2>
+    <div id="models" class="cards"><p class="muted">Loading…</p></div>
+    <h2 class="sec">Image, video and audio <span id="mcount" class="muted"></span></h2>
+    <div id="media" class="cards"><p class="muted">Loading…</p></div>
+    <p class="hint">Text models are listed by <code>GET /v1/models</code>; media models are not, they appear only in
+      <code>GET /v1/status/models</code>. A price is the grid's list price and does not say that a model is online.</p>
+  </section>
+
+  <!-- NETWORK -->
+  <section class="view" id="view-network">
+    <header class="vh"><h1>Network</h1><span id="netstamp" class="muted"></span></header>
+    <p class="muted">Who is serving the grid right now. The grid publishes no worker locations, so this shows which
+      worker serves which model rather than a geographic map.</p>
+    <div id="netmap" class="netmap"><p class="muted">Loading…</p></div>
+    <p class="hint netlegend"><span class="lgi"><span class="lg hot"></span>served a job in the last 10 minutes</span>
+      <span class="lgi"><span class="lg used"></span>served one of the last 100 jobs</span>
+      <span class="lgi"><span class="lg"></span>online, idle</span></p>
+    <h2 class="sec">Latest jobs on the grid</h2>
+    <div class="tablewrap"><table><thead><tr><th>When</th><th>Worker</th><th>Model</th><th>Type</th><th>Duration</th><th>Den</th></tr></thead>
+      <tbody id="netfeed"><tr><td colspan="6" class="muted">—</td></tr></tbody></table></div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section class="view" id="view-account">
+    <header class="vh"><h1>Account</h1><button class="btn" data-reload>Refresh</button></header>
+    <p class="muted">Your credit, your workers and their earnings. Nothing here needs a server: the page talks to
+      the grid directly from your browser.</p>
+    <div class="field">
+      <label for="key">Grid API key</label>
+      <div class="row">
+        <input id="key" type="password" placeholder="grid_…" autocomplete="off" spellcheck="false">
+        <button class="btn primary" id="key-save">Save</button>
+        <button class="btn ghost" id="key-clear">Forget</button>
+      </div>
+      <p class="hint" id="key-msg">Stored only in this browser (<code>localStorage</code>) and sent only to
+        <code>api.aipowergrid.io</code>. No key yet? Create one in the
+        <a href="https://console.aipowergrid.io/dashboard/api-key" target="_blank" rel="noopener">AIPG Console</a>.</p>
     </div>
-  </header>
-  <p class="sub">Live view of the <a href="https://api.aipowergrid.io/v1" target="_blank" rel="noopener">AI&nbsp;Power&nbsp;Grid</a>
-    OpenAI-compatible API — models, modalities and prices, pulled directly from the public
-    <code>/v1/models</code> endpoint in your browser. No key needed to browse.</p>
-
-  <section id="text">
-    <h2><span class="dot"></span>Text &amp; vision models <span id="tcount" class="muted" style="font-size:.85rem;font-weight:400"></span></h2>
-    <p class="note">Live from <code>GET /v1/models</code> (public, CORS-enabled). Prices are USD per million tokens.</p>
-    <div id="models" class="grid"><p class="status"><span class="spin"></span> Loading models…</p></div>
+    <div class="stats" id="ac-stats"></div>
+    <h2 class="sec">Your workers</h2>
+    <div id="ac-workers" class="cards"><p class="muted">—</p></div>
+    <h2 class="sec">Recent jobs of your workers</h2>
+    <div class="tablewrap"><table><thead><tr><th>When</th><th>Model</th><th>Type</th><th>Den</th><th>Units</th><th>Duration</th></tr></thead>
+      <tbody id="ac-jobs"><tr><td colspan="6" class="muted">—</td></tr></tbody></table></div>
   </section>
 
-  <section id="image">
-    <h2><span class="dot" style="background:var(--acc2)"></span>Image generation</h2>
-    <p class="note"><code>POST /v1/images/generations</code> is live and OpenAI-compatible, but the image models
-      are <b>not</b> returned by <code>/v1/models</code> — they can only be discovered from an error string. The list
-      below was captured on 2026-11-05; use the key probe to refresh it live.</p>
-    <div class="grid" id="imgmodels"></div>
-    <table>
-      <tr><th>Parameter</th><th>Behaviour</th></tr>
-      <tr><td><code>model</code></td><td>Required (unlike text, <code>"auto"</code> is rejected). Omitting it defaults to <code>FLUX.2 Klein 4B FP8</code>.</td></tr>
-      <tr><td><code>size</code></td><td>Validated: width &amp; height each <b>512–1536</b>. <code>256x256</code> → <code>422</code>.</td></tr>
-      <tr><td><code>n</code></td><td>Supported; returns N images.</td></tr>
-      <tr><td><code>response_format</code></td><td><code>url</code> (served from <code>media.aipg.art</code>) or <code>b64_json</code>.</td></tr>
-      <tr><td>response</td><td>Each item has <code>revised_prompt</code>, <code>seed</code>; a top-level <code>grid</code> block has <code>job_id</code>, <code>worker</code>, <code>gen_time</code>, <code>model</code>.</td></tr>
-    </table>
-  </section>
+  <!-- DEVELOPERS -->
+  <section class="view" id="view-developers">
+    <header class="vh"><h1>Developers</h1></header>
+    <p class="muted">Base URL <code>https://api.aipowergrid.io/v1</code>, OpenAI-compatible. The full endpoint list is
+      public at <a href="https://api.aipowergrid.io/openapi.json" target="_blank" rel="noopener">/openapi.json</a>
+      (Swagger UI at <a href="https://api.aipowergrid.io/docs" target="_blank" rel="noopener">/docs</a>).</p>
 
-  <section id="probe">
-    <h2><span class="dot" style="background:var(--warn)"></span>Live key probe <span class="muted" style="font-size:.8rem;font-weight:400">optional</span></h2>
-    <p class="note">Paste a <code>grid_…</code> API key to live-refresh the image-model list and show your linked account.
-      The key stays <b>only in this browser</b> (<code>localStorage</code>), is sent only to <code>api.aipowergrid.io</code>,
-      and is never uploaded anywhere else.</p>
-    <div class="keyrow">
-      <input id="key" type="password" placeholder="grid_…" autocomplete="off" spellcheck="false">
-      <button id="probe-btn">Probe</button>
-      <button id="key-clear" title="Forget key">Forget</button>
-    </div>
-    <p id="probe-status" class="status"></p>
-    <pre id="probe-out" style="display:none"><code></code></pre>
-  </section>
+    <h2 class="sec">Things that cost integration time</h2>
+    <div class="flag danger"><b>The default <code>Python-urllib</code> User-Agent is blocked (403).</b>
+      A request with no custom <code>User-Agent</code> gets a blank 403 before the key is even checked. Set any
+      User-Agent; the official OpenAI and Anthropic SDKs and <code>curl</code> already do.</div>
+    <div class="flag warn"><b>Reasoning models can return <code>content: null</code>.</b>
+      <code>qwen3:*</code> and <code>gpt-oss-120b</code> spend the token budget on hidden reasoning. With a small
+      <code>max_tokens</code> you get <code>finish_reason: "length"</code> and no answer. Give at least about 1024,
+      even for trivial prompts.</div>
+    <div class="flag"><b>Reasoning effort: only <code>low</code> and <code>medium</code> pass.</b>
+      The grid turns <code>none</code> and <code>minimal</code> into <code>low</code> and drops other values, so the
+      serving machine applies its default.</div>
+    <div class="flag"><b>The balance lives at <code>/v1/account/credits</code>.</b>
+      Read <code>total_spendable_usd</code> before you call instead of meeting a <code>402</code> mid-request.
+      <code>POST /v1/account/credits/quote</code> estimates a request in advance.</div>
+    <div class="flag"><b>The daily free allowance needs a Google sign-in.</b>
+      It is granted only to accounts with a verified Google sign-in; other accounts see it but cannot spend it.</div>
+    <div class="flag"><b>Sign-in without an API key exists.</b>
+      The grid is an OAuth 2.1 server for public clients (PKCE, loopback redirect for native apps). Access tokens last
+      15 minutes; with the <code>offline_access</code> scope you get a rotating refresh token. Metadata:
+      <code>/.well-known/oauth-authorization-server</code>.</div>
+    <div class="flag"><b>The legacy <code>/api/v2</code> (AI-Horde style) is retired.</b>
+      It returns <code>410 Gone</code> and points at <code>/v1</code>.</div>
+    <div class="flag"><b>Not available (all 404):</b> <code>/v1/embeddings</code>, <code>/v1/completions</code>,
+      <code>/v1/audio/*</code>, <code>/v1/moderations</code>, <code>/v1/rerank</code>. Do not assume full OpenAI parity.</div>
 
-  <section id="gotchas">
-    <h2><span class="dot" style="background:var(--danger)"></span>Developer gotchas</h2>
-    <p class="note">Things that cost us time while integrating — documented so they don't cost you any.</p>
-    <div class="flag danger"><span class="ic">⚠</span><div><b>Default <code>Python-urllib</code> User-Agent is blocked (403).</b>
-      A request with no custom <code>User-Agent</code> gets a blank 403 before auth is even checked. Set any UA
-      (the official OpenAI/Anthropic SDKs and <code>curl</code> already do). See examples below.</div></div>
-    <div class="flag warn"><span class="ic">◆</span><div><b>Reasoning models can return <code>content: null</code>.</b>
-      <code>qwen3:*</code> and <code>gpt-oss-120b</code> spend the token budget on hidden reasoning; at small
-      <code>max_tokens</code> you get <code>finish_reason:"length"</code> and empty content. Give generous headroom
-      (≥ ~1024 even for trivial prompts).</div></div>
-    <div class="flag"><span class="ic">◆</span><div><b>Balance lives at <code>/v1/account/credits</code>.</b>
-      Read <code>total_spendable_usd</code> there before you call, instead of discovering a <code>402</code> mid-request.
-      The full endpoint list is public at <code>/openapi.json</code> (Swagger UI at <code>/docs</code>).</div></div>
-    <div class="flag"><span class="ic">◆</span><div><b>Legacy <code>/api/v2</code> (AI-Horde style) is retired</b> —
-      returns <code>410 Gone</code>, pointing at <code>/v1</code>.</div></div>
-    <div class="flag"><span class="ic">◆</span><div><b>Not available (all 404):</b> <code>/v1/embeddings</code>,
-      <code>/v1/completions</code>, <code>/v1/audio/*</code>, <code>/v1/moderations</code>, <code>/v1/rerank</code>.
-      Don't assume full OpenAI parity.</div></div>
-  </section>
-
-  <section id="examples">
-    <h2><span class="dot" style="background:var(--acc2)"></span>Quickstart</h2>
-    <p class="note">Base URL <code>https://api.aipowergrid.io/v1</code> · OpenAI-compatible · remember the User-Agent.</p>
+    <h2 class="sec">Quickstart</h2>
     <div class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="curl">curl</button>
-      <button role="tab" aria-selected="false" data-tab="py">Python</button>
-      <button role="tab" aria-selected="false" data-tab="js">JS (fetch)</button>
-      <button role="tab" aria-selected="false" data-tab="img">Image</button>
+      <button class="btn" role="tab" aria-selected="true" data-tab="curl">curl</button>
+      <button class="btn" role="tab" aria-selected="false" data-tab="py">Python</button>
+      <button class="btn" role="tab" aria-selected="false" data-tab="js">JS (fetch)</button>
+      <button class="btn" role="tab" aria-selected="false" data-tab="img">Image</button>
     </div>
-    <pre data-pane="curl"><button class="copy">copy</button><code>curl https://api.aipowergrid.io/v1/chat/completions \
+    <pre data-pane="curl"><button class="btn copy">copy</button><code>curl https://api.aipowergrid.io/v1/chat/completions \
   -H "Authorization: Bearer $AIPG_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "deepseek-v4-flash-nvfp4",
+    "model": "auto",
     "messages": [{"role":"user","content":"Hello!"}],
-    "max_tokens": 256
+    "max_tokens": 1024
   }'</code></pre>
-    <pre data-pane="py" style="display:none"><button class="copy">copy</button><code>from openai import OpenAI  # official SDK sets its own User-Agent
+    <pre data-pane="py" style="display:none"><button class="btn copy">copy</button><code>from openai import OpenAI  # the official SDK sets its own User-Agent
 
 client = OpenAI(base_url="https://api.aipowergrid.io/v1",
                 api_key="grid_...")
 
 r = client.chat.completions.create(
-    model="deepseek-v4-flash-nvfp4",
+    model="auto",
     messages=[{"role": "user", "content": "Hello!"}],
-    max_tokens=256,          # for qwen3:* / gpt-oss-120b use >= 1024
+    max_tokens=1024,         # reasoning models need the headroom
 )
 print(r.choices[0].message.content)
 
 # Raw urllib/requests? You MUST set a User-Agent or you get 403:
 #   headers["User-Agent"] = "my-app/1.0"</code></pre>
-    <pre data-pane="js" style="display:none"><button class="copy">copy</button><code>const r = await fetch("https://api.aipowergrid.io/v1/chat/completions", {
+    <pre data-pane="js" style="display:none"><button class="btn copy">copy</button><code>const r = await fetch("https://api.aipowergrid.io/v1/chat/completions", {
   method: "POST",
   headers: {
     "Authorization": `Bearer ${AIPG_KEY}`,
@@ -195,158 +360,324 @@ print(r.choices[0].message.content)
     "User-Agent": "my-app/1.0"            // browsers set this for you
   },
   body: JSON.stringify({
-    model: "deepseek-v4-flash-nvfp4",
+    model: "auto",
     messages: [{ role: "user", content: "Hello!" }],
-    max_tokens: 256
+    max_tokens: 1024
   })
 });
 console.log((await r.json()).choices[0].message.content);</code></pre>
-    <pre data-pane="img" style="display:none"><button class="copy">copy</button><code>curl https://api.aipowergrid.io/v1/images/generations \
+    <pre data-pane="img" style="display:none"><button class="btn copy">copy</button><code>curl https://api.aipowergrid.io/v1/images/generations \
   -H "Authorization: Bearer $AIPG_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "z-image-turbo",
     "prompt": "a single red circle on a white background",
-    "size": "512x512",
+    "size": "1024x1024",
     "n": 1
   }'
 # -> data[].url (media.aipg.art) + seed; model is REQUIRED (no "auto")</code></pre>
-  </section>
 
-  <section id="issues">
-    <h2><span class="dot"></span>Open reports</h2>
-    <p class="note">Issues we filed while testing the grid (all community-contributed):</p>
+    <h2 class="sec">Image generation parameters</h2>
+    <div class="tablewrap"><table><thead><tr><th>Parameter</th><th>Behaviour</th></tr></thead><tbody>
+      <tr><td><code>model</code></td><td class="wrap">Required. Unlike text, <code>"auto"</code> is rejected.</td></tr>
+      <tr><td><code>size</code></td><td class="wrap">Width and height each 512–1536. <code>256x256</code> gives <code>422</code>.</td></tr>
+      <tr><td><code>n</code></td><td class="wrap">Supported; returns N images.</td></tr>
+      <tr><td><code>response_format</code></td><td class="wrap"><code>url</code> (served from <code>media.aipg.art</code>) or <code>b64_json</code>.</td></tr>
+      <tr><td>response</td><td class="wrap">Each item has <code>revised_prompt</code> and <code>seed</code>; a top-level <code>grid</code> block has <code>job_id</code>, <code>worker</code>, <code>gen_time</code>, <code>model</code>.</td></tr>
+    </tbody></table></div>
+
+    <h2 class="sec">Tools from the same author</h2>
     <div class="iss">
-      <a href="https://github.com/AIPowerGrid/grid-skill/issues/22" target="_blank" rel="noopener">grid-skill #22 · reasoning content</a>
-      <a href="https://github.com/AIPowerGrid/grid-text-worker/issues/46" target="_blank" rel="noopener">grid-text-worker #46 · operator feedback</a>
-      <a href="https://github.com/AIPowerGrid/grid-text-worker/issues/47" target="_blank" rel="noopener">grid-text-worker #47 · prefill timeout</a>
-      <a href="https://github.com/AIPowerGrid/aipg-documentation/issues/44" target="_blank" rel="noopener">docs #44 · onboarding 402</a>
-      <a href="https://github.com/AIPowerGrid/aipg-documentation/issues/45" target="_blank" rel="noopener">docs #45 · image API</a>
-      <a href="https://github.com/AIPowerGrid/aipg-documentation/issues/46" target="_blank" rel="noopener">docs #46 · client gotchas</a>
+      <a class="btn" href="https://github.com/speteai/aipg-desktop" target="_blank" rel="noopener">AIPG Desktop</a>
+      <a class="btn" href="https://github.com/speteai/aipg-gridclient" target="_blank" rel="noopener">Python client</a>
+      <a class="btn" href="https://github.com/speteai/aipg-worker-monitor" target="_blank" rel="noopener">Worker monitor</a>
+      <a class="btn" href="https://github.com/speteai/aipg-worker-preflight" target="_blank" rel="noopener">Worker preflight</a>
+      <a class="btn" href="https://github.com/speteai/aipg-frontends" target="_blank" rel="noopener">LibreChat &amp; Open WebUI configs</a>
     </div>
-  </section>
 
-  <footer>
-    Community-built, unofficial. Not affiliated with AI Power Grid.
-    Data pulled live from <code>api.aipowergrid.io</code> · prices &amp; models may change.<br>
-    <span id="stamp"></span>
-  </footer>
-</div>
+    <p class="hint" style="margin-top:var(--s6)">AIPG Grid Explorer · unofficial, community-built · not affiliated with AI Power Grid ·
+      <a href="https://github.com/speteai/aipg-grid-explorer" target="_blank" rel="noopener">source</a> ·
+      <a href="#" id="theme">light / dark</a></p>
+  </section>
+</main>
 
 <script>
-const API = "https://api.aipowergrid.io";
-const KNOWN_IMAGE_MODELS = ["FLUX.2 Klein 4B FP8","Krea 2 Turbo","MOSS Image SFT BF16","z-image-turbo"];
-const $ = s => document.querySelector(s);
+const API = "https://api.aipowergrid.io/v1";
+const KEY = "aipg-key", THEME = "aipg-theme", NET_RECENT = 600000;
+const $ = (s) => document.querySelector(s);
+const store = {
+  get(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } },
+  set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} },
+};
+// everything that comes from the API is escaped before it reaches the page
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (v) => (v == null ? "—" : "$" + Number(v).toFixed(3));
+const num = (v) => Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 1 });
+const clip = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+function timeAgo(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 90) return Math.round(s) + " s ago";
+  if (s < 5400) return Math.round(s / 60) + " min ago";
+  if (s < 129600) return Math.round(s / 3600) + " h ago";
+  return Math.round(s / 86400) + " d ago";
+}
+function stat(k, v, lead, note) {
+  return `<div class="stat"><div class="k">${esc(k)}</div><div class="v${lead ? " lead" : ""}">${v}</div>${note ? `<div class="n">${esc(note)}</div>` : ""}</div>`;
+}
+const key = () => store.get(KEY).trim();
+async function get(path, auth) {
+  const headers = { "Accept": "application/json" };
+  if (auth) headers["Authorization"] = "Bearer " + key();
+  const r = await fetch(API + path, { headers });
+  if (!r.ok) {
+    let d = ""; try { d = (await r.json()).detail || ""; } catch (e) {}
+    const err = new Error("HTTP " + r.status + (typeof d === "string" && d ? ": " + d : "")); err.status = r.status; throw err;
+  }
+  return r.json();
+}
+function setConn(state, label) { $("#conn").className = "conn" + (state ? " " + state : ""); $("#connlabel").textContent = label; }
 
-// theme
-const themeBtn = $("#theme");
-function applyTheme(t){ if(t) document.documentElement.setAttribute("data-theme",t);
-  else document.documentElement.removeAttribute("data-theme"); }
-try{ applyTheme(localStorage.getItem("aipg-theme")); }catch(e){}
-themeBtn.onclick = () => {
-  const cur = document.documentElement.getAttribute("data-theme");
-  const next = cur === "dark" ? "light" : cur === "light" ? "dark"
-    : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
-  applyTheme(next); try{ localStorage.setItem("aipg-theme", next); }catch(e){}
+/* ---------- theme (dark by default, like the desktop app) ---------- */
+function applyTheme(t) { if (t === "light") document.documentElement.setAttribute("data-theme", "light"); else document.documentElement.removeAttribute("data-theme"); }
+applyTheme(store.get(THEME));
+$("#theme").onclick = (e) => {
+  e.preventDefault();
+  const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  applyTheme(next); store.set(THEME, next);
 };
 
-function price(p){
-  if(!p) return '<span class="muted">no price listed</span>';
-  const i = p.input_per_mtok_usd, o = p.output_per_mtok_usd;
-  return `<span class="k">in</span> <span class="v">$${i}</span> <span class="k">· out</span> <span class="v">$${o}</span> <span class="k">/Mtok</span>`;
+/* ---------- overview ---------- */
+let MY_WORKERS = [];
+async function loadOverview() {
+  try {
+    const [net, totals] = await Promise.all([get("/status/network"), get("/stats/totals").catch(() => null)]);
+    const cap = net.capacity || {}, val = net.validators || {}, day = (totals && totals.day) || {};
+    const jobsToday = Object.values(day).reduce((a, x) => a + (x.jobs || 0), 0);
+    $("#ov-net").innerHTML =
+      stat("Network", esc(net.status || "—"), net.status === "operational") +
+      stat("Workers online", esc(cap.workers_online ?? "—")) +
+      stat("Models online", esc(cap.models_online ?? "—")) +
+      stat("Jobs today", esc(jobsToday)) +
+      stat("Validators", esc(val.participating ?? "—"), false, val.registered_active != null ? `${val.registered_active} registered` : "");
+    setConn(net.status === "operational" ? "ok" : "err", "grid " + (net.status || "unknown"));
+    const t = totals || {}, types = [...new Set([...Object.keys(t.total || {}), ...Object.keys(t.month || {}), ...Object.keys(day)])].sort();
+    $("#ov-totals").innerHTML = types.map((ty) => {
+      const c = (o) => ((o || {})[ty] || {});
+      return `<tr><td>${esc(ty)}</td><td>${num(c(day).jobs)}</td><td>${num(c(t.month).jobs)}</td><td>${num(c(t.total).jobs)}</td><td>${num(c(t.total).den)}</td></tr>`;
+    }).join("") || '<tr><td colspan="5" class="muted">No totals published.</td></tr>';
+  } catch (e) {
+    setConn("err", "grid unreachable");
+    $("#ov-net").innerHTML = ""; $("#ov-totals").innerHTML = `<tr><td colspan="5" class="muted">Could not load: ${esc(e.message)}</td></tr>`;
+  }
+  $("#ov-nokey").style.display = key() ? "none" : "";
+  $("#ov-acct").innerHTML = "";
+  if (key()) {
+    try { $("#ov-acct").innerHTML = accountStats(...(await accountData())); }
+    catch (e) { $("#ov-acct").innerHTML = stat("Account", e.status === 401 ? "bad API key" : "error", false, e.message); }
+  }
+  $("#stamp").textContent = "Updated " + new Date().toLocaleTimeString();
 }
-function modalChips(m){
-  const mods = m.input_modalities || [];
-  let out = "";
-  if(mods.includes("text")) out += '<span class="chip txt">text</span>';
-  if(mods.includes("image")) out += '<span class="chip img">vision (image in)</span>';
-  if(!out) out = '<span class="chip">—</span>';
-  return out;
+
+/* ---------- models ---------- */
+function rateText(r) {
+  if (!r) return '<span class="muted">no price listed</span>';
+  const v = (x) => `<span class="v">$${esc(x)}</span>`;
+  if (r.input_per_mtok_usd != null) return `${v(r.input_per_mtok_usd)} in · ${v(r.output_per_mtok_usd)} out /Mtok`;
+  if (r.per_image_usd != null) return `${v(r.per_image_usd)} per image`;
+  if (r.per_video_second_usd != null) return `${v(r.per_video_second_usd)} per second of video`;
+  if (r.per_audio_second_usd != null) return `${v(r.per_audio_second_usd)} per second of audio`;
+  if (r.per_3d_generation_usd != null) return `${v(r.per_3d_generation_usd)} per generation`;
+  return '<span class="muted">no price listed</span>';
 }
-async function loadModels(){
-  const box = $("#models");
-  box.innerHTML = '<p class="status"><span class="spin"></span> Loading models…</p>';
-  try{
-    const r = await fetch(API + "/v1/models", {headers:{"Accept":"application/json"}});
-    if(!r.ok) throw new Error("HTTP " + r.status);
-    const data = (await r.json()).data || [];
-    $("#tcount").textContent = `(${data.length})`;
-    box.innerHTML = data.map(m => `
-      <div class="card">
-        <h3>${m.id}</h3>
-        <div class="chips">${modalChips(m)}</div>
-        <div class="price">${price(m.pricing)}</div>
-      </div>`).join("");
-    stamp();
-  }catch(e){
-    box.innerHTML = `<p class="status err">Could not load models: ${e.message}. The API may be down or blocking this origin.</p>`;
+async function loadModels() {
+  try {
+    const [list, status, pricing] = await Promise.all([
+      get("/models").then((d) => d.data || []), get("/status/models").catch(() => []), get("/pricing").catch(() => null),
+    ]);
+    const st = Object.fromEntries((Array.isArray(status) ? status : []).map((m) => [m.name, m]));
+    const book = (pricing && pricing.price_book) || {}, rates = {};
+    (book.models || []).forEach((m) => { rates[String(m.model).toLowerCase()] = m.rates; });
+    const rateFor = (name) => { const n = String(name).toLowerCase(); return rates[n] || rates[(book.aliases || {})[n]] || null; };
+    const live = (s) => (s && s.count
+      ? `<span class="chip on">${esc(s.count)} worker${s.count === 1 ? "" : "s"}</span>` : '<span class="chip off">no worker</span>');
+    const fastest = Object.values(st).filter((m) => m.type === "text" && m.tokens_per_s).sort((a, b) => b.tokens_per_s - a.tokens_per_s)[0];
+    $("#tcount").textContent = `(${list.length})`;
+    $("#models").innerHTML = list.map((m) => {
+      const s = st[m.id], mods = m.input_modalities || [];
+      const chips = (m.id === "auto" ? '<span class="chip txt">grid picks</span>' : live(s)) +
+        (mods.includes("image") ? '<span class="chip img">vision</span>' : "") +
+        (fastest && fastest.name === m.id ? '<span class="chip img">fastest now</span>' : "");
+      const speed = s && s.tokens_per_s ? `<div class="wmeta">${esc(Number(s.tokens_per_s).toFixed(0))} tokens/s measured</div>` : "";
+      return `<div class="card"><h3>${esc(m.id)}</h3><div class="chips">${chips}</div>
+        <div class="price">${m.id === "auto" ? '<span class="muted">billed at the price of the model the grid picks</span>' : rateText(m.pricing || rateFor(m.id))}</div>${speed}</div>`;
+    }).join("") || '<p class="muted">No text models listed.</p>';
+    const media = Object.values(st).filter((m) => m.type !== "text").sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+    $("#mcount").textContent = `(${media.length})`;
+    $("#media").innerHTML = media.map((m) => `<div class="card"><h3>${esc(m.name)}</h3>
+      <div class="chips">${live(m)}<span class="chip img">${esc(m.type)}</span></div>
+      <div class="price">${rateText(rateFor(m.name))}</div></div>`).join("") || '<p class="muted">No media models online.</p>';
+  } catch (e) {
+    $("#models").innerHTML = `<p class="muted">Could not load models: ${esc(e.message)}</p>`; $("#media").innerHTML = "";
   }
 }
-function renderImageModels(list, live){
-  $("#imgmodels").innerHTML = list.map(n => `
-    <div class="card">
-      <h3>${n}</h3>
-      <div class="chips"><span class="chip img">image out</span>${live?'<span class="chip txt">live</span>':'<span class="chip">2026-11-05</span>'}</div>
-      <div class="price muted">no price listed</div>
-    </div>`).join("");
-}
-renderImageModels(KNOWN_IMAGE_MODELS, false);
 
-function stamp(){ $("#stamp").textContent = "Last live fetch: " + new Date().toLocaleString(); }
-$("#reload").onclick = loadModels;
-
-// tabs
-document.querySelectorAll('.tabs [role=tab]').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.tabs [role=tab]').forEach(x => x.setAttribute("aria-selected", x===b));
-  document.querySelectorAll('[data-pane]').forEach(p =>
-    p.style.display = p.dataset.pane === b.dataset.tab ? "" : "none");
-});
-// copy buttons
-document.querySelectorAll('.copy').forEach(btn => btn.onclick = () => {
-  const code = btn.parentElement.querySelector('code').innerText;
-  navigator.clipboard.writeText(code).then(()=>{ btn.textContent="copied"; setTimeout(()=>btn.textContent="copy",1200); });
-});
-
-// key probe (optional)
-const keyInput = $("#key");
-try{ keyInput.value = localStorage.getItem("aipg-key") || ""; }catch(e){}
-$("#key-clear").onclick = () => { keyInput.value=""; try{localStorage.removeItem("aipg-key");}catch(e){}
-  $("#probe-status").textContent="Key forgotten."; $("#probe-status").className="status"; };
-$("#probe-btn").onclick = async () => {
-  const key = keyInput.value.trim();
-  const st = $("#probe-status"), out = $("#probe-out");
-  if(!key){ st.textContent="Enter a key first."; st.className="status err"; return; }
-  try{ localStorage.setItem("aipg-key", key); }catch(e){}
-  st.innerHTML = '<span class="spin"></span> Probing…'; st.className="status"; out.style.display="none";
-  const H = {"Authorization":"Bearer "+key, "Content-Type":"application/json"};
-  try{
-    // 1) account
-    const acc = await fetch(API+"/v1/account", {headers:H});
-    let accObj = acc.ok ? await acc.json() : {error:"HTTP "+acc.status};
-    // 2) discover live image models via deliberate bad model
-    let imgs = KNOWN_IMAGE_MODELS, liveImgs = false;
-    const probe = await fetch(API+"/v1/images/generations", {method:"POST", headers:H,
-      body: JSON.stringify({model:"__none__", prompt:"x"})});
-    if(probe.status===422 || probe.status===404){
-      const d = await probe.json();
-      const msg = (d.detail||"");
-      const mm = msg.match(/\[([^\]]*)\]/);
-      if(mm){ imgs = mm[1].split(",").map(s=>s.replace(/['"]/g,"").trim()).filter(Boolean); liveImgs=true; }
-    }
-    renderImageModels(imgs, liveImgs);
-    // redact wallet-ish fields for display
-    const red = JSON.parse(JSON.stringify(accObj));
-    ["wallet","payout_wallet"].forEach(k=>{ if(red[k]) red[k]=red[k].slice(0,6)+"…"; });
-    if(red.username) red.username = String(red.username).slice(0,6)+"…";
-    out.querySelector('code').textContent = JSON.stringify(red, null, 2);
-    out.style.display="";
-    st.textContent = liveImgs ? "OK — image models refreshed live." : "Account OK (image list unchanged)."; st.className="status ok";
-  }catch(e){
-    st.textContent = "Probe failed: " + e.message; st.className="status err";
+/* ---------- network ---------- */
+let NET_SEEN = null, NET_T = null, NET_BUSY = false;
+function renderNetwork(net, wk, jobs) {
+  const cap = net.capacity || {};
+  const act = {}, linkAct = {}, fresh = new Set();
+  for (const j of jobs) {
+    const t = new Date(j.created).getTime();
+    const a = (act[j.worker] = act[j.worker] || { n: 0, last: 0 });
+    a.n++; a.last = Math.max(a.last, t);
+    const k = j.worker + "\u0000" + j.model;
+    linkAct[k] = Math.max(linkAct[k] || 0, t);
+    if (NET_SEEN && !NET_SEEN.has(j.job_id)) fresh.add(k);
   }
+  NET_SEEN = new Set(jobs.map((j) => j.job_id));
+  const mine = new Set(MY_WORKERS.map((w) => w.name));
+  const workers = wk.slice().sort((a, b) =>
+    String((a.job_types || [])[0]).localeCompare(String((b.job_types || [])[0])) || a.name.localeCompare(b.name));
+  const models = (cap.models || []).slice().sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+  if (!workers.length) $("#netmap").innerHTML = '<p class="muted">No workers are online right now.</p>';
+  else {
+    const ROW = 44, W = 920, XW = 350, XM = 570, PAD = 26;
+    const H = Math.max(workers.length, models.length) * ROW + PAD * 2;
+    const ys = (n) => { const top = (H - (n - 1) * ROW) / 2; return (i) => top + i * ROW; };
+    const yw = ys(workers.length), ym = ys(models.length), now = Date.now();
+    const mIdx = Object.fromEntries(models.map((m, i) => [m.name, i]));
+    let links = "", nodes = "";
+    workers.forEach((w, i) => {
+      for (const m of w.models || []) {
+        if (!(m in mIdx)) continue;
+        const k = w.name + "\u0000" + m, t = linkAct[k] || 0;
+        const cls = "nl" + (fresh.has(k) ? " fresh" : "") + (t && now - t < NET_RECENT ? " hot" : t ? " used" : "");
+        const y1 = yw(i), y2 = ym(mIdx[m]), mx = (XW + XM) / 2;
+        links += `<path class="${cls}" d="M${XW + 7} ${y1} C${mx} ${y1}, ${mx} ${y2}, ${XM - 7} ${y2}"/>`;
+      }
+      const a = act[w.name], hot = a && now - a.last < NET_RECENT, y = yw(i);
+      const sub = a ? `${a.n} job${a.n === 1 ? "" : "s"} · last ${timeAgo(new Date(a.last).toISOString())}` : "no recent jobs";
+      nodes += `<g class="nw${w.online ? "" : " off"}${hot ? " hot" : ""}${mine.has(w.name) ? " mine" : ""}">
+        <title>${esc(w.name)} — ${esc((w.models || []).join(", "))}</title>
+        <rect x="${XW - 6}" y="${y - 6}" width="12" height="12"/>
+        <text class="nt" x="${XW - 18}" y="${y - 2}" text-anchor="end">${esc(clip(w.name, 34))}${mine.has(w.name) ? " (yours)" : ""}</text>
+        <text class="ns" x="${XW - 18}" y="${y + 13}" text-anchor="end">${esc(sub)}</text></g>`;
+    });
+    models.forEach((m, i) => {
+      const y = ym(i);
+      nodes += `<g class="nm ${m.type === "text" ? "txt" : "other"}"><title>${esc(m.name)}</title>
+        <rect x="${XM - 6}" y="${y - 6}" width="12" height="12" transform="rotate(45 ${XM} ${y})"/>
+        <text class="nt" x="${XM + 18}" y="${y - 2}">${esc(clip(m.name, 36))}</text>
+        <text class="ns" x="${XM + 18}" y="${y + 13}">${esc(m.type)} · ${esc(m.workers)} worker${m.workers === 1 ? "" : "s"}</text></g>`;
+    });
+    $("#netmap").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Workers and the models they serve">
+      <text class="nh" x="${XW - 18}" y="14" text-anchor="end">WORKERS</text><text class="nh" x="${XM + 18}" y="14">MODELS</text>
+      ${links}${nodes}</svg>`;
+  }
+  $("#netfeed").innerHTML = jobs.slice(0, 20).map((j) => `<tr>
+      <td class="muted">${esc(timeAgo(j.created))}</td><td>${esc(j.worker)}</td><td>${esc(j.model)}</td>
+      <td>${esc(j.type)}</td><td>${j.duration_s != null ? Number(j.duration_s).toFixed(1) + " s" : "—"}</td>
+      <td>+${Number(j.den || 0).toFixed(2)}</td></tr>`).join("")
+    || '<tr><td colspan="6" class="muted">No recent jobs.</td></tr>';
+  $("#netstamp").textContent = "Updated " + new Date().toLocaleTimeString() + " · refreshes every 15 s";
+}
+async function loadNetwork() {
+  if (NET_BUSY) return;
+  NET_BUSY = true;
+  try {
+    const [net, wk, jobs] = await Promise.all([get("/status/network"), get("/workers"), get("/jobs/recent?limit=100")]);
+    renderNetwork(net, wk.workers || [], jobs.jobs || []);
+  } catch (e) { $("#netstamp").textContent = "Could not load the network: " + e.message; }
+  finally { NET_BUSY = false; }
+  if (!NET_T) NET_T = setInterval(() => {
+    if (current() === "network" && !document.hidden) loadNetwork();
+    else if (current() !== "network") { clearInterval(NET_T); NET_T = null; }
+  }, 15000);
+}
+
+/* ---------- account ---------- */
+async function accountData() {
+  const [w, c] = await Promise.all([get("/account/workers", true), get("/account/credits", true)]);
+  MY_WORKERS = w.workers || [];
+  return [w, c];
+}
+function accountStats(w, c) {
+  const reset = (() => {
+    const h = (new Date().setUTCHours(24, 0, 0, 0) - Date.now()) / 3600000;
+    return h < 1 ? `resets in ${Math.max(1, Math.round(h * 60))} min` : `resets in ${Math.round(h)} h`;
+  })();
+  const credit = [];
+  if (c.paid && c.paid.balance_usd != null) credit.push(`balance ${money(c.paid.balance_usd)}`);
+  if (c.promotional && Number(c.promotional.remaining_usd) > 0) credit.push(`promo ${money(c.promotional.remaining_usd)}`);
+  const ws = w.workers || [];
+  return stat("Spendable", esc(money(c.total_spendable_usd)), true, credit.join(" · ")) +
+    (c.free ? stat("Free today", `${esc(money(c.free.remaining_usd))} <small>/ ${esc(money(c.free.daily_cap_usd))}</small>`, false,
+      reset + (c.free.active === false ? " · not spendable: needs a Google sign-in on the account" : "")) : "") +
+    stat("Workers online", esc(`${ws.filter((x) => x.online).length} / ${ws.length}`)) +
+    stat("Den earned", esc(num(w.den_earned))) +
+    stat("Jobs completed", esc(num(w.jobs_completed)));
+}
+async function loadAccount() {
+  $("#key").value = key();
+  if (!key()) {
+    $("#ac-stats").innerHTML = ""; $("#ac-workers").innerHTML = '<p class="muted">Save a key to see your workers.</p>';
+    $("#ac-jobs").innerHTML = '<tr><td colspan="6" class="muted">—</td></tr>'; return;
+  }
+  try {
+    const [w, c] = await accountData();
+    $("#ac-stats").innerHTML = accountStats(w, c);
+    $("#ac-workers").innerHTML = (w.workers || []).map((x) => {
+      const badge = x.maintenance ? '<span class="chip">maintenance</span>'
+        : x.online ? '<span class="chip on">online</span>' : '<span class="chip off">offline</span>';
+      return `<div class="card"><h3>${esc(x.name)}</h3>
+        <div class="chips">${badge}<span class="chip">${esc(x.type || "")}</span></div>
+        <div class="wmeta">models: ${esc((x.models || []).join(", ") || "—")}<br>den: ${esc(x.den_earned ?? 0)} · jobs: ${esc(x.jobs_completed ?? 0)}</div></div>`;
+    }).join("") || '<p class="muted">No workers on this account yet.</p>';
+  } catch (e) {
+    $("#ac-stats").innerHTML = stat("Account", e.status === 401 ? "bad API key" : "error", false, e.message);
+    $("#ac-workers").innerHTML = '<p class="muted">—</p>';
+  }
+  try {
+    const d = await get("/account/jobs", true), jobs = d.jobs || [];
+    $("#ac-jobs").innerHTML = jobs.slice(0, 50).map((j) => `<tr>
+      <td>${esc(j.ts ? new Date(j.ts).toLocaleString() : (j.timestamp || j.created || "—"))}</td>
+      <td>${esc(j.model || "")}</td><td>${esc(j.type || "")}</td><td>${esc(j.den ?? "—")}</td>
+      <td>${esc(j.output_units ?? "—")}</td><td>${esc(j.duration_s != null ? j.duration_s + " s" : "—")}</td></tr>`).join("")
+      || '<tr><td colspan="6" class="muted">No jobs yet.</td></tr>';
+  } catch (e) { $("#ac-jobs").innerHTML = `<tr><td colspan="6" class="muted">${esc(e.message)}</td></tr>`; }
+}
+$("#key-save").onclick = () => {
+  const k = $("#key").value.trim();
+  if (k && !/^grid_/.test(k)) { $("#key-msg").textContent = "That does not look like a Grid key: it should start with grid_."; return; }
+  store.set(KEY, k); loadAccount();
 };
+$("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#key-save").click(); });
+$("#key-clear").onclick = () => { store.set(KEY, ""); MY_WORKERS = []; loadAccount(); };
 
-loadModels();
+/* ---------- developers: tabs and copy buttons ---------- */
+document.querySelectorAll(".tabs [role=tab]").forEach((b) => (b.onclick = () => {
+  document.querySelectorAll(".tabs [role=tab]").forEach((x) => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("[data-pane]").forEach((p) => (p.style.display = p.dataset.pane === b.dataset.tab ? "" : "none"));
+}));
+document.querySelectorAll(".copy").forEach((btn) => (btn.onclick = () => {
+  navigator.clipboard.writeText(btn.parentElement.querySelector("code").innerText)
+    .then(() => { btn.textContent = "copied"; setTimeout(() => (btn.textContent = "copy"), 1200); });
+}));
+
+/* ---------- navigation (the address carries the view, so links can point at one) ---------- */
+const LOAD = { overview: loadOverview, models: loadModels, network: loadNetwork, account: loadAccount, developers: () => {} };
+function current() { const v = location.hash.replace(/^#/, ""); return v in LOAD ? v : "overview"; }
+function show() {
+  const v = current();
+  document.querySelectorAll(".view").forEach((s) => s.classList.toggle("active", s.id === "view-" + v));
+  document.querySelectorAll(".nav").forEach((n) => n.classList.toggle("active", n.dataset.view === v));
+  $("main").scrollTop = 0;
+  LOAD[v]();
+}
+window.addEventListener("hashchange", show);
+document.querySelectorAll("[data-reload]").forEach((b) => (b.onclick = () => LOAD[current()]()));
+show();
+if (current() !== "overview") get("/status/network").then((n) => setConn(n.status === "operational" ? "ok" : "err", "grid " + (n.status || "unknown"))).catch(() => setConn("err", "grid unreachable"));
 </script>
 </body>
 </html>
