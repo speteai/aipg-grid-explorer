@@ -640,7 +640,8 @@ async function loadAccount() {
   try {
     const d = await get("/account/jobs", true), jobs = d.jobs || [];
     $("#ac-jobs").innerHTML = jobs.slice(0, 50).map((j) => `<tr>
-      <td>${esc(j.ts ? new Date(j.ts).toLocaleString() : (j.timestamp || j.created || "—"))}</td>
+      <td>${esc((() => { const raw = j.created || j.ts || j.timestamp; if (!raw) return "—";
+        const d = new Date(typeof raw === "string" ? raw.replace(/(\.\d{3})\d+/, "$1") : raw); return isNaN(d) ? String(raw) : d.toLocaleString(); })())}</td>
       <td>${esc(j.model || "")}</td><td>${esc(j.type || "")}</td><td>${esc(j.den ?? "—")}</td>
       <td>${esc(j.output_units ?? "—")}</td><td>${esc(j.duration_s != null ? j.duration_s + " s" : "—")}</td></tr>`).join("")
       || '<tr><td colspan="6" class="muted">No jobs yet.</td></tr>';
