@@ -11,13 +11,16 @@ desktop app by the same author.
   measured speed and the list price; image, video and audio models with their prices.
 - **Network** — which worker serves which model, with recent activity, and the latest
   jobs on the grid. Refreshes every 15 seconds.
+- **Token** — AIPG's price, pool size and trading volume, what each holder tier brings and
+  costs, and the number of holders. Read from DexScreener and GeckoTerminal.
 - **Account** (needs an API key) — your credit and free allowance, your workers and
   their recent jobs.
 - **Developers** — the non-obvious things that cost integration time, copy-paste
   quickstarts and the image API parameters.
 
 > **Unofficial & community-built.** Not affiliated with AI Power Grid.
-> Data is fetched live in your browser from `api.aipowergrid.io`.
+> Data is fetched live in your browser from `api.aipowergrid.io`; the Token view also reads
+> market and holder figures from DexScreener and GeckoTerminal.
 
 ## Use it
 

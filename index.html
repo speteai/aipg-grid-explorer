@@ -214,6 +214,7 @@ pre code{background:none;border:0;padding:0;font-size:inherit}
   <a class="nav" href="#overview" data-view="overview">Overview</a>
   <a class="nav" href="#models" data-view="models">Models</a>
   <a class="nav" href="#network" data-view="network">Network</a>
+  <a class="nav" href="#token" data-view="token">Token</a>
   <a class="nav" href="#account" data-view="account">Account</a>
   <a class="nav" href="#developers" data-view="developers">Developers</a>
   <span class="spacer"></span>
@@ -265,6 +266,39 @@ pre code{background:none;border:0;padding:0;font-size:inherit}
     <h2 class="sec">Latest jobs on the grid</h2>
     <div class="tablewrap"><table><thead><tr><th>When</th><th>Worker</th><th>Model</th><th>Type</th><th>Duration</th><th>Den</th></tr></thead>
       <tbody id="netfeed"><tr><td colspan="6" class="muted">—</td></tr></tbody></table></div>
+  </section>
+
+  <!-- TOKEN -->
+  <section class="view" id="view-token">
+    <header class="vh"><h1>Token</h1><button class="btn" data-reload>Refresh</button></header>
+    <p class="muted">AIPG is the grid's token: an ERC-20 on Base with a fixed supply of 150,000,000. The figures
+      below are read in your browser from DexScreener and GeckoTerminal, not from the grid.</p>
+    <div class="stats" id="tk-stats"></div>
+    <p class="hint" id="tk-note"></p>
+    <h2 class="sec">What holding AIPG brings</h2>
+    <p class="muted">An account whose sign-in wallet holds AIPG on Base gets free credit on the grid every day.
+      The tokens stay in the wallet; the grid only reads the balance.</p>
+    <div class="tablewrap"><table><thead><tr><th>Hold in the wallet</th><th>Free credit per day</th><th>In 30 days</th>
+      <th>Images per day</th><th>Cost at market</th><th>Share of pool</th><th>Cost matched after</th></tr></thead>
+      <tbody id="tk-tiers"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div>
+    <p class="hint" id="tk-tiernote"></p>
+    <p class="hint">The grid counts the balance at the last Base block before midnight UTC, so the first allowance
+      comes the day after the tokens arrive. Each wallet counts on its own. The network grants a limited total per
+      day, and the grid can change the tiers. The credit can only be spent on the grid. This is not investment
+      advice: the token's price can fall, and the pool is small.</p>
+    <h2 class="sec">Where it trades</h2>
+    <div class="tablewrap"><table><thead><tr><th>Market</th><th>Pair</th><th>Price</th><th>In the pool</th><th>Traded in 24 h</th><th>Trades in 24 h</th></tr></thead>
+      <tbody id="tk-pools"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody></table></div>
+    <p class="row" style="margin-top:12px">
+      <a class="btn primary" id="tk-buy" target="_blank" rel="noopener">Open on Uniswap</a>
+      <a class="btn" id="tk-chart" target="_blank" rel="noopener">Price chart</a>
+      <a class="btn" id="tk-scan" target="_blank" rel="noopener">Contract on Basescan</a>
+    </p>
+    <p class="hint">Token address on Base: <code id="tk-addr"></code>. Check it before you swap: tokens with the same
+      name and another address are not AIPG.</p>
+    <h2 class="sec">Holders</h2>
+    <div class="stats" id="tk-holders"></div>
+    <p class="stamp" id="tk-stamp"></p>
   </section>
 
   <!-- ACCOUNT -->
@@ -655,6 +689,86 @@ $("#key-save").onclick = () => {
 $("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#key-save").click(); });
 $("#key-clear").onclick = () => { store.set(KEY, ""); MY_WORKERS = []; loadAccount(); };
 
+/* ---------- token ---------- */
+/* The address is fixed here and never taken from a server. */
+const AIPG_TOKEN = "0xa1c0deCaFE3E9Bf06A5F29B7015CD373a9854608";
+const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const AIPG_SUPPLY = 150000000;
+/* The grid reports the tiers only to a signed-in account; these are the ones it reported on the date below. */
+const TIERS_SEEN = { on: "2026-11-14", tiers: [{ min: 10000, usd: 0.1 }, { min: 100000, usd: 0.5 }, { min: 1000000, usd: 2 }] };
+const usd0 = (n) => "$" + Math.round(Number(n) || 0).toLocaleString("en-US");
+const usd2 = (n) => (Number(n) < 100 ? "$" + Number(n).toFixed(2) : usd0(n));
+function aipgPools(d) {
+  return (Array.isArray(d && d.pairs) ? d.pairs : []).filter((x) => x && x.chainId === "base" && x.baseToken &&
+    String(x.baseToken.address).toLowerCase() === AIPG_TOKEN.toLowerCase() && Number(x.priceUsd) > 0)
+    .map((x) => ({
+      dex: String(x.dexId || ""), label: (x.labels || []).join(" "), quote: String((x.quoteToken && x.quoteToken.symbol) || ""),
+      price: Number(x.priceUsd), pool: Number(x.liquidity && x.liquidity.usd) || 0, day: Number(x.volume && x.volume.h24) || 0,
+      trades: (Number(x.txns && x.txns.h24 && x.txns.h24.buys) || 0) + (Number(x.txns && x.txns.h24 && x.txns.h24.sells) || 0),
+      change: x.priceChange && x.priceChange.h24 != null ? Number(x.priceChange.h24) : null, url: String(x.url || ""),
+    })).sort((a, b) => b.pool - a.pool);
+}
+function tierRows(tiers, price, pool, imagePrice) {
+  return tiers.map((t) => {
+    const cost = price > 0 ? t.min * price : null;
+    return { min: t.min, day: t.usd, month: t.usd * 30, images: imagePrice > 0 ? Math.floor(t.usd / imagePrice + 1e-9) : null,
+      cost, share: cost != null && pool > 0 ? cost / pool * 100 : null, days: cost != null ? Math.ceil(cost / t.usd - 1e-9) : null };
+  });
+}
+async function loadToken() {
+  $("#tk-addr").textContent = AIPG_TOKEN;
+  $("#tk-buy").href = `https://app.uniswap.org/swap?chain=base&inputCurrency=${USDC_BASE}&outputCurrency=${AIPG_TOKEN}`;
+  $("#tk-chart").href = "https://dexscreener.com/base/" + AIPG_TOKEN;
+  $("#tk-scan").href = "https://basescan.org/token/" + AIPG_TOKEN;
+  const json = (url) => fetch(url, { headers: { Accept: "application/json" } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const [dex, info, pricing, status, credits] = await Promise.all([
+    json("https://api.dexscreener.com/latest/dex/tokens/" + AIPG_TOKEN),
+    json("https://api.geckoterminal.com/api/v2/networks/base/tokens/" + AIPG_TOKEN + "/info"),
+    get("/pricing").catch(() => null), get("/status/models").catch(() => null),
+    store.get(KEY) ? get("/account/credits", true).catch(() => null) : null,
+  ]);
+  const pools = aipgPools(dex), top = pools[0] || null;
+  const allPool = pools.reduce((a, x) => a + x.pool, 0), allDay = pools.reduce((a, x) => a + x.day, 0);
+  $("#tk-stats").innerHTML = top
+    ? stat("Price", "$" + top.price.toFixed(6), "", top.change != null ? `${top.change > 0 ? "+" : ""}${top.change.toFixed(1)}% in 24 h` : "") +
+      stat("Value of all tokens", usd0(top.price * AIPG_SUPPLY), "", "150,000,000 AIPG at this price") +
+      stat("In the pools", usd0(allPool), "", `${pools.length} pool${pools.length === 1 ? "" : "s"} on Base`) +
+      stat("Traded in 24 h", usd0(allDay), "", "")
+    : stat("Price", "—", "", "The market figures could not be read");
+  $("#tk-note").textContent = top && allPool > 0
+    ? `The market is small. A purchase or sale worth more than a few percent of the pool (${usd0(allPool * 0.03)} is 3%) moves the price noticeably.`
+    : "";
+  $("#tk-pools").innerHTML = pools.length ? pools.map((x) =>
+    `<tr><td>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.dex)} ${esc(x.label)}</a>` : esc(x.dex + " " + x.label)}</td>` +
+    `<td>AIPG / ${esc(x.quote)}</td><td>$${x.price.toFixed(6)}</td><td>${usd0(x.pool)}</td><td>${usd0(x.day)}</td><td>${x.trades}</td></tr>`).join("")
+    : '<tr><td colspan="6" class="muted">No market data.</td></tr>';
+  // holder tiers: live from the account when a key is saved, else the last ones seen
+  const live = ((credits && credits.free && credits.free.holder_tiers) || [])
+    .map((t) => ({ min: Number(t && t.min_aipg), usd: Number(t && t.daily_usd) })).filter((t) => t.min > 0 && t.usd > 0).sort((a, b) => a.min - b.min);
+  const tiers = live.length ? live : TIERS_SEEN.tiers;
+  const online = new Set((Array.isArray(status) ? status : []).filter((m) => m && m.type === "image" && (m.count || 0) > 0).map((m) => String(m.name).toLowerCase()));
+  const image = (((pricing && pricing.price_book && pricing.price_book.models) || [])
+    .map((m) => ({ name: String(m.model), price: Number(m.rates && m.rates.per_image_usd) }))
+    .filter((m) => m.price > 0 && online.has(m.name.toLowerCase())).sort((a, b) => a.price - b.price))[0] || null;
+  $("#tk-tiers").innerHTML = tierRows(tiers, top ? top.price : 0, allPool, image && image.price).map((r) =>
+    `<tr><td>${r.min.toLocaleString("en-US")} AIPG</td><td>$${r.day.toFixed(2)}</td><td>$${r.month.toFixed(2)}</td>` +
+    `<td>${r.images == null ? "—" : r.images}</td><td>${r.cost == null ? "—" : usd2(r.cost)}</td>` +
+    `<td>${r.share == null ? "—" : (r.share < 10 ? r.share.toFixed(1) : Math.round(r.share)) + "%"}</td><td>${r.days == null ? "—" : r.days + " days"}</td></tr>`).join("");
+  $("#tk-tiernote").textContent =
+    (live.length ? "Tiers as the grid reports them to your account now." : `Tiers as the grid reported them on ${TIERS_SEEN.on}; save an API key under Account to read them live.`) +
+    (image ? ` Images counted with ${image.name} at $${image.price} each, the cheapest image model online.` : "") +
+    ' "Cost matched after" is the number of days until the free credit adds up to the purchase price, if the price stays where it is.';
+  const h = info && info.data && info.data.attributes && info.data.attributes.holders;
+  const dist = (h && h.distribution_percentage) || {};
+  $("#tk-holders").innerHTML = h && h.count != null
+    ? stat("Wallets holding AIPG", Number(h.count).toLocaleString("en-US"), "", "on Base") +
+      (dist.top_10 != null ? stat("Held by the 10 largest", Number(dist.top_10).toFixed(1) + "%", "", "includes the Uniswap pool and the staking vault") : "") +
+      (dist.rest != null ? stat("Held outside the 50 largest", Number(dist.rest).toFixed(1) + "%", "", "") : "")
+    : stat("Wallets holding AIPG", "—", "", "The holder figures could not be read");
+  $("#tk-stamp").textContent = "Updated " + new Date().toLocaleTimeString() + " · market: DexScreener · holders: GeckoTerminal" +
+    (h && h.last_updated ? " (" + new Date(h.last_updated).toLocaleString() + ")" : "");
+}
+
 /* ---------- developers: tabs and copy buttons ---------- */
 document.querySelectorAll(".tabs [role=tab]").forEach((b) => (b.onclick = () => {
   document.querySelectorAll(".tabs [role=tab]").forEach((x) => x.setAttribute("aria-selected", x === b));
@@ -666,7 +780,7 @@ document.querySelectorAll(".copy").forEach((btn) => (btn.onclick = () => {
 }));
 
 /* ---------- navigation (the address carries the view, so links can point at one) ---------- */
-const LOAD = { overview: loadOverview, models: loadModels, network: loadNetwork, account: loadAccount, developers: () => {} };
+const LOAD = { overview: loadOverview, models: loadModels, network: loadNetwork, token: loadToken, account: loadAccount, developers: () => {} };
 function current() { const v = location.hash.replace(/^#/, ""); return v in LOAD ? v : "overview"; }
 function show() {
   const v = current();
